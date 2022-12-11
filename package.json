@@ -1,7 +1,12 @@
 {
   "name": "homebridge-config-ui-x",
+<<<<<<< HEAD
   "displayName": "Homebridge UI",
   "version": "4.50.2",
+=======
+  "displayName": "Homebridge Config UI X",
+  "version": "4.15.2-test.11",
+>>>>>>> url-stub-support
   "description": "A web based management, configuration and control platform for Homebridge",
   "license": "MIT",
   "author": "oznu <dev@oz.nu>",

@@ -2,6 +2,7 @@ import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientModule } from '@angular/common/http';
 import { NgModule, LOCALE_ID } from '@angular/core';
+import { APP_BASE_HREF } from '@angular/common';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { ToastrModule } from 'ngx-toastr';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -72,7 +73,40 @@ import { LoginModule } from './modules/login/login.module';
             },
             deps: [TranslateService],
         },
+<<<<<<< HEAD
     ],
     bootstrap: [AppComponent],
+=======
+      },
+      onMonacoLoad,
+    }),
+    DragulaModule.forRoot(),
+    CoreModule,
+    AuthModule,
+    StatusModule,
+    RestartModule,
+    AppRoutingModule,
+  ],
+  providers: [
+    {
+      provide: APP_BASE_HREF,
+      useFactory: () => {
+        return window.location.pathname.split('/')[1] === 'homebridge' ? '/homebridge' : '';
+      },
+    },
+    {
+      provide: LOCALE_ID,
+      useFactory: (translate: TranslateService) => {
+        if (translate.currentLang in supportedLocales) {
+          return supportedLocales[translate.currentLang];
+        } else {
+          return 'en';
+        }
+      },
+      deps: [TranslateService],
+    },
+  ],
+  bootstrap: [AppComponent],
+>>>>>>> url-stub-support
 })
 export class AppModule { }
