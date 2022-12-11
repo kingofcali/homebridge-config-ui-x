@@ -134,20 +134,29 @@ export class LinuxInstaller extends BasePlatform {
       '/usr/local/lib/node_modules',
       '/usr/lib/node_modules'
     ].includes(path.dirname(process.env.UIX_BASE_PATH))) {
+      // systemd has a 90 second default timeout in the pre-start jobs
+      // terminate this task after 60 seconds to be safe
+      setTimeout(() => {
+        process.exit(0);
+      }, 60000);
+
       const modulesPath = path.dirname(process.env.UIX_BASE_PATH);
       const temporaryDirectoriesToClean = (await fs.readdir(modulesPath)).filter(x => {
         return x.startsWith('.homebridge-');
       });
+
       for (const directory of temporaryDirectoriesToClean) {
         const pathToRemove = path.join(modulesPath, directory);
         try {
           console.log('Removing stale temporary directory:', pathToRemove);
-          await fs.remove(pathToRemove);
+          await fs.rm(pathToRemove, { recursive: true, force: true });
         } catch (e) {
           console.error('Failed to remove:', pathToRemove, e);
         }
       }
     }
+
+    process.exit(0);
   }
 
   /**
@@ -180,7 +189,12 @@ export class LinuxInstaller extends BasePlatform {
         this.hbService.logger(`Rebuilt plugins in ${process.env.UIX_CUSTOM_PLUGIN_PATH} for Node.js ${targetNodeVersion}.`, 'succeed');
       } else {
         // normal global npm setups
-        const npmGlobalPath = child_process.execSync('/bin/echo -n "$(npm --no-update-notifier -g prefix)/lib/node_modules"').toString('utf8');
+        const npmGlobalPath = child_process.execSync('/bin/echo -n "$(npm -g prefix)/lib/node_modules"', {
+          env: Object.assign({
+            npm_config_loglevel: 'silent',
+            npm_update_notifier: 'false',
+          }, process.env),
+        }).toString('utf8');
 
         child_process.execSync('npm rebuild --unsafe-perm', {
           cwd: process.env.UIX_BASE_PATH,
@@ -377,6 +391,11 @@ export class LinuxInstaller extends BasePlatform {
 
     try {
       const majorVersion = semver.parse(job.target).major;
+      // update apt (and accept release info changes)
+      child_process.execSync('apt-get update --allow-releaseinfo-change', {
+        stdio: 'inherit',
+      });
+
       // update repo
       child_process.execSync(`curl -sL https://deb.nodesource.com/setup_${majorVersion}.x | bash -`, {
         stdio: 'inherit',
@@ -456,7 +475,7 @@ export class LinuxInstaller extends BasePlatform {
    * Check the current user is NOT root
    */
   private checkIsNotRoot() {
-    if (process.getuid() === 0 && !this.hbService.allowRunRoot) {
+    if (process.getuid() === 0 && !this.hbService.allowRunRoot && process.env.HOMEBRIDGE_CONFIG_UI !== '1') {
       this.hbService.logger('ERROR: This command must not be executed as root or with sudo', 'fail');
       this.hbService.logger('ERROR: If you know what you are doing; you can override this by adding --allow-root', 'fail');
       process.exit(1);
